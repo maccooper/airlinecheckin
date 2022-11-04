@@ -11,8 +11,7 @@
 #define SCALE 10000
 
 Customer *queue = NULL;
-Customer customer_list[1000];
-//Customer *customer_list = NULL;
+Customer customer_list[64];
 
 struct timeval init_time;
 pthread_mutex_t mqueue;
@@ -36,8 +35,6 @@ void init_customers(char *file_name) {
         temp_tc = atoi(strtok(NULL, ","));
         temp_at = atoi(strtok(NULL, ","));
         temp_st = atoi(strtok(NULL, ","));
-        //Customer *n = new_customer(temp_id,temp_tc,temp_at,temp_st);
-        //customer_list = enqueue(customer_list, n);
         customer_list[i].id = temp_id;
         customer_list[i].travel_class = temp_tc;
         customer_list[i].arrival_time = temp_at;
@@ -55,13 +52,22 @@ int fetch_time() {
     return (curr - start) / SCALE;
 }
 
-void *service(void *p) {
-    Customer *temp = (Customer *)p;
-    printf("%d\n", temp->id);
+void *customer_t_worker(void *p) {
+    Customer *person = (Customer *)p;
+    //Functionality for customer handled:
+    //id            DONE
+    //travel class  DONE
+    //arrival time  DONE
+    //service time   
+    usleep(person->arrival_time * SCALE);
+    printf("A customer arrives: customer ID %2d\n",person->id);
+    pthread_mutex_lock(&mqueue);
+        queue = enqueue(queue,person);
+        printf("A customer enters a queue: the queue ID %1d, and length of the queue %2d.\n", person->travel_class, len[person->travel_class]);
+        len[person->travel_class]++;
+    pthread_mutex_unlock(&mqueue);
     pthread_exit(NULL);
     
-}
-void dispatch() {
 }
 
 int num_customers(char *file_name) {
@@ -88,21 +94,15 @@ int main(int argc, char* argv[]){
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_t customer_threads[n];
-    pthread_cond_t customer_conds[n];
+    //pthread_cond_t customer_conds[n];
 
-    //Customer *curr=  malloc(n * sizeof(*curr));
-    //curr = customer_list;
     for(int i = 0; i < n; i++) {
-        //printf("iteration: %d\n",i);
-        pthread_create(&customer_threads[i], NULL, service, (void *)&customer_list[i]);
-        /*
-        pthread_create(&customer_threads[i], &attr, service, (void *)&curr);
-        if(curr !=NULL) {
-            curr = curr->next;
-        }
-        */
+        pthread_create(&customer_threads[i], NULL, customer_t_worker, (void *)&customer_list[i]);
     }
-    print_queue(customer_list);
+    for(int i = 0; i < n; i++) {
+        pthread_join(customer_threads[i],NULL);
+    }
+    pthread_exit(NULL);
+    print_queue(queue);
     free_queue(queue);
-    //free_queue(customer_list);
 }
