@@ -7,19 +7,25 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-Customer *queue = NULL;
-struct timeval initial_time;
 
+#define SCALE 10000
+
+Customer *queue = NULL;
+Customer customer_list[2000];
+//Customer *customer_list = NULL;
+
+struct timeval init_time;
+pthread_mutex_t mqueue;
+int len[] = {0,0}; //Stores the length of our queues
+                   //
 void init_customers(char *file_name) {
     //Initializes our customers by opening the file and reading their data from our textfile
     int num_customers;
-    int length_economy = 0;
-    int length_business = 0;
     char buff[64];
     int temp_id; //id
     int temp_tc; //travel_class
-    int temp_ac; //arrival_time
-    int temp_st; //service_time
+    int temp_at; //arrival_time
+    int temp_st; 
     FILE *file = fopen(file_name, "r");
     fgets(buff, 64, file);
     num_customers = atoi(buff);
@@ -28,22 +34,36 @@ void init_customers(char *file_name) {
         fgets(buff, 64, file);
         temp_id= atoi(strtok(buff, ":"));
         temp_tc = atoi(strtok(NULL, ","));
-        temp_ac = atoi(strtok(NULL, ","));
+        temp_at = atoi(strtok(NULL, ","));
         temp_st = atoi(strtok(NULL, ","));
-        Customer *n = new_customer(temp_id,temp_tc,temp_ac,temp_st);
-        printf("A customer arrives: customer ID: %2d. \n", temp_id); 
-        queue = enqueue(queue, n);
-        if(temp_tc == 1) {
-            length_business++;
-            printf("A customer enters a queue: the queue ID %1d, their position is number %1d. \n", temp_tc, length_business); //Design doc specifies printing the length of the queue, but I'm not sure if I was supposed to output length prior to them entering, so I changed the output to remove ambiguity. If you want the answer for lenght prior to entry, could just move enum to below print.
-        } else {
-            length_economy++;
-            printf("A customer enters a queue: the queue ID %1d, their position is number %1d. \n", temp_tc, length_economy);
+        /*
+        Customer *n = new_customer(temp_id,temp_tc,temp_at,temp_st);
+        customer_list = enqueue(customer_list, n);
+        */
+        customer_list[i].id = temp_id;
+        customer_list[i].travel_class = temp_tc;
+        customer_list[i].arrival_time = temp_at;
+        customer_list[i].service_time = temp_st;
         }
-    }
     fclose(file);
 }
 
+int fetch_time() {
+    //Calculates simulation time
+    struct timeval curr_time;
+    gettimeofday(&curr_time, NULL);
+    int start = (init_time.tv_sec * SCALE) + init_time.tv_usec;
+    int curr = (curr_time.tv_sec * SCALE) + curr_time.tv_usec;
+    return (curr - start) / SCALE;
+}
+
+void *service(void *p) {
+    //printf("%d\n",temp->id);
+    Customer *temp = (Customer *)p;
+    printf("%d\n", temp->id);
+    exit(1);
+    
+}
 void dispatch() {
 }
 
@@ -59,19 +79,31 @@ int num_customers(char *file_name) {
 
 int main(int argc, char* argv[]){
     //Init
-    gettimeofday(&initial_time,NULL);
-    int n_customers = num_customers(argv[1]);
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    //Mutex
-    //pthread_mutex_init(&customer_mutex[i], NULL);
-    //pthread_cond_init(&clerk_ready,NULL);
     if(argc > 1) {
     init_customers(argv[1]);
     } else {
         printf("Invalid input\n");
         return -1;
     }
-    print_queue(queue);
+    gettimeofday(&init_time,NULL);
+    int n = num_customers(argv[1]);
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_t customer_threads[n];
+    //pthread_cond_t customer_conds[n];
+    for(int i = 0; i < n; i++) {
+      printf("customer list id:%d\n", customer_list[i].id);
+    }
+    //printf("%d\n", n);
+    //Customer *curr =  malloc(sizeof(*curr));
+    //curr = customer_list;
+    for(int i = 0; i < n; i++) {
+      pthread_create(&customer_threads[i], NULL, service, (void *)&customer_list[i]);
+        //pthread_create(&customer_threads[i], &attr, service, (void *)&curr);
+    }
+    print_queue(customer_list);
+    free_queue(queue);
+    free_queue(customer_list);
+   // free_queue(curr);
 }
