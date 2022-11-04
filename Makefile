@@ -1,7 +1,7 @@
 CC= gcc
 CFLAGS=-Wall -std=c99 -D_GNU_SOURCE
 
-TARGETS = acs
+TARGETS = acs pqueue
 
 .PHONY: all clean
 
@@ -17,7 +17,7 @@ obj:
 	mkdir -p $@
 
 acs: $(OBJ)
-	$(CC) -o acs $^ $(CFLAGS) 
+	$(CC) -pthread -lreadline -o acs $^ $(CFLAGS) -lreadline
 
 debug: CFLAGS += -g
 debug: acs
