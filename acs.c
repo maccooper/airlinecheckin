@@ -5,8 +5,10 @@
 #include <unistd.h>
 #include "pqueue.h"
 #include <sys/types.h>
+#include <sys/time.h>
 
 Customer *queue = NULL;
+struct timeval initial_time;
 
 void init_customers(char *file_name) {
     //Initializes our customers by opening the file and reading their data from our textfile
@@ -45,7 +47,26 @@ void init_customers(char *file_name) {
 void dispatch() {
 }
 
+int num_customers(char *file_name) {
+    char buff[64];
+    int num_customers;
+    FILE *file = fopen(file_name, "r");
+    fgets(buff,64,file);
+    num_customers = atoi(buff);
+    return num_customers;
+
+}
+
 int main(int argc, char* argv[]){
+    //Init
+    gettimeofday(&initial_time,NULL);
+    int n_customers = num_customers(argv[1]);
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    //Mutex
+    //pthread_mutex_init(&customer_mutex[i], NULL);
+    //pthread_cond_init(&clerk_ready,NULL);
     if(argc > 1) {
     init_customers(argv[1]);
     } else {
