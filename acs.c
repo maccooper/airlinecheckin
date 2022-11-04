@@ -9,9 +9,14 @@
 
 
 #define SCALE 10000
+#define CLERKS 5
 
 Customer *queue = NULL;
 Customer customer_list[64];
+
+struct clerk_info {
+    int clerk_id;
+};
 
 struct timeval init_time;
 pthread_mutex_t mqueue;
@@ -31,7 +36,7 @@ void init_customers(char *file_name) {
     for(int i = 0; i < num_customers; i++) {
         //Init our customers here
         fgets(buff, 64, file);
-        temp_id= atoi(strtok(buff, ":"));
+        temp_id = atoi(strtok(buff, ":"));
         temp_tc = atoi(strtok(NULL, ","));
         temp_at = atoi(strtok(NULL, ","));
         temp_st = atoi(strtok(NULL, ","));
@@ -39,7 +44,7 @@ void init_customers(char *file_name) {
         customer_list[i].travel_class = temp_tc;
         customer_list[i].arrival_time = temp_at;
         customer_list[i].service_time = temp_st;
-        }
+    }
     fclose(file);
 }
 
@@ -55,9 +60,6 @@ int fetch_time() {
 void *customer_t_worker(void *p) {
     Customer *person = (Customer *)p;
     //Functionality for customer handled:
-    //id            DONE
-    //travel class  DONE
-    //arrival time  DONE
     //service time   
     usleep(person->arrival_time * SCALE);
     printf("A customer arrives: customer ID %2d\n",person->id);
@@ -66,6 +68,19 @@ void *customer_t_worker(void *p) {
         printf("A customer enters a queue: the queue ID %1d, and length of the queue %2d.\n", person->travel_class, len[person->travel_class]);
         len[person->travel_class]++;
     pthread_mutex_unlock(&mqueue);
+    pthread_exit(NULL);
+    
+}
+
+void *clerk_t_worker(void *clerk_id) {
+    struct clerk_info *clerk = (struct clerk_info *)clerk_id;
+    int c_id = clerk->clerk_id;
+    while(!is_empty(queue)) {
+        pthread_mutex_lock(&mqueue);
+        //Consume
+        pthread_mutex_lock(&mqueue);
+    }
+    
     pthread_exit(NULL);
     
 }
@@ -90,14 +105,17 @@ int main(int argc, char* argv[]){
     }
     gettimeofday(&init_time,NULL);
     int n = num_customers(argv[1]);
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_t customer_threads[n];
-    //pthread_cond_t customer_conds[n];
+    pthread_t clerk_threads[CLERKS];
+    struct clerk_info clerks[CLERKS];
 
     for(int i = 0; i < n; i++) {
+        //Initialize Customer threads
         pthread_create(&customer_threads[i], NULL, customer_t_worker, (void *)&customer_list[i]);
+    }
+    for(int i = 0; i < CLERKS; i++) {
+        //Initialize Clerk threads
+        pthread_create(&clerk_threads[i], NULL, clerk_t_worker, &clerks[i]);
     }
     for(int i = 0; i < n; i++) {
         pthread_join(customer_threads[i],NULL);
