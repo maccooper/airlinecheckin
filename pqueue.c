@@ -43,7 +43,9 @@ Customer *enqueue(Customer *list, Customer *new) {
 void dequeue(Customer *list) {
     //Remove customer from the front of the queue
     Customer *temp = list;
-    *list = *list->next;
+    if(list->next != NULL) {
+        *list = *list->next;
+    }
     free(temp);
 
 }

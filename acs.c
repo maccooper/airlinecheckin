@@ -16,12 +16,16 @@ Customer customer_list[64];
 
 struct clerk_info {
     int clerk_id;
+    int serving;
 };
 
 struct timeval init_time;
+
 pthread_mutex_t mqueue;
-pthread_cond_t  cqueue;
-pthread_mutex_t cmut[CLERKS];
+pthread_cond_t cqueue;
+
+pthread_mutex_t clerk_mutex[CLERKS];
+pthread_cond_t cond_var[CLERKS];
 
 int len[] = {0,0}; //Stores the length of our queues
                    
@@ -71,12 +75,10 @@ void *customer_t_worker(void *p) {
     usleep(person->arrival_time * SCALE);
     printf("A customer arrives: customer ID %2d\n",person->id);
     pthread_mutex_lock(&mqueue);
-    printf("lock acquired by worker");
         queue = enqueue(queue,person);
         printf("A customer enters a queue: the queue ID %1d, and length of the queue %2d.\n", person->travel_class, len[person->travel_class]);
         len[person->travel_class]++;
-    pthread_mutex_unlock(&mqueue);
-    printf("lock released by worker");
+        pthread_mutex_unlock(&mqueue);
     pthread_exit(NULL);
     
 }
@@ -84,23 +86,19 @@ void *customer_t_worker(void *p) {
 void *clerk_t_worker(void *clerk_id) {
     struct clerk_info *clerk = (struct clerk_info *)clerk_id;
     int c_id = clerk->clerk_id;
-    Customer *temp; 
-    printf("before loop\n");
-    for(;;) {
-        printf("start loop\n");
+    //for(;;) {
+        //pthread_cond_signal();^
+        /*
         pthread_mutex_lock(&mqueue);
-        printf("hello\n");
-        print_queue(queue);
         if(is_empty(queue)) {
-            sleep(5);
+            pthread_mutex_unlock(&mqueue);
+            usleep(5);
             continue;
         }
-        temp = queue;
-        dequeue(queue);
         pthread_mutex_unlock(&mqueue);
-        printf("clerk %d helping customer:%d\n",c_id,temp->id);
-    }
-    //pthread_exit(NULL);
+        */
+    //}
+    pthread_exit(NULL);
     
 }
 
@@ -148,6 +146,6 @@ int main(int argc, char* argv[]){
     }
     
     pthread_exit(NULL);
-    print_queue(queue);
+    //print_queue(queue);
     free_queue(queue);
 }
