@@ -40,6 +40,10 @@ void init_customers(char *file_name) {
         temp_tc = atoi(strtok(NULL, ","));
         temp_at = atoi(strtok(NULL, ","));
         temp_st = atoi(strtok(NULL, ","));
+        if(temp_id < 0 || temp_tc < 0 || temp_at < 0 || temp_st < 0) {
+            printf("negative value in input file\n");
+            exit(-1);
+        }
         customer_list[i].id = temp_id;
         customer_list[i].travel_class = temp_tc;
         customer_list[i].arrival_time = temp_at;
