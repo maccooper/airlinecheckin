@@ -20,6 +20,8 @@ struct clerk_info {
 
 struct timeval init_time;
 pthread_mutex_t mqueue;
+pthread_cond_t  cqueue;
+
 int len[] = {0,0}; //Stores the length of our queues
                    
 void init_customers(char *file_name) {
@@ -79,13 +81,16 @@ void *customer_t_worker(void *p) {
 void *clerk_t_worker(void *clerk_id) {
     struct clerk_info *clerk = (struct clerk_info *)clerk_id;
     int c_id = clerk->clerk_id;
+    Customer *temp; 
     while(!is_empty(queue)) {
         pthread_mutex_lock(&mqueue);
-        //Consume
+        temp = queue;
+        dequeue(queue);
         pthread_mutex_lock(&mqueue);
+        printf("clerk %d helping customer:%d\n",c_id,temp->id);
     }
-    
     pthread_exit(NULL);
+    return NULL;
     
 }
 
@@ -111,6 +116,7 @@ int main(int argc, char* argv[]){
     int n = num_customers(argv[1]);
     pthread_t customer_threads[n];
     pthread_t clerk_threads[CLERKS];
+    pthread_cond_init(&cqueue,NULL);
     struct clerk_info clerks[CLERKS];
 
     for(int i = 0; i < n; i++) {
@@ -123,6 +129,9 @@ int main(int argc, char* argv[]){
     }
     for(int i = 0; i < n; i++) {
         pthread_join(customer_threads[i],NULL);
+    }
+    for(int i = 0; i < CLERKS; i++) {
+        pthread_join(clerk_threads[i], NULL);
     }
     pthread_exit(NULL);
     print_queue(queue);
